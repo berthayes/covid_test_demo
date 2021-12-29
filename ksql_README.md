@@ -2,6 +2,8 @@
 
 ## Joining Applicant Data with Test Result Data
 
+### ***Make sure that auto.offset.reset = Earliest***
+
 Create a stream from Applicant data (Oracle)
 ```sql
 CREATE STREAM APPLICANTS WITH (
