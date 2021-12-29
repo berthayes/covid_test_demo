@@ -4,7 +4,7 @@
 
 ### ***Make sure that auto.offset.reset = Earliest***
 
-Create a stream from Applicant data (Oracle)
+1. Create a stream from Applicant data (Oracle)
 ```sql
 CREATE STREAM APPLICANTS WITH (
   KAFKA_TOPIC='ORCLCDB.C__MYUSER.APPLICANTS', 
@@ -12,12 +12,12 @@ CREATE STREAM APPLICANTS WITH (
 );
 ```
 
-Sanity check for APPLICANTS Stream:
+2. Sanity check for APPLICANTS Stream:
 ```sql
 SELECT * FROM APPLICANTS EMIT CHANGES;
 ```
 
-Create Stream from CSV Test Data
+3. Create Stream from CSV Test Data
 ```sql
 CREATE STREAM COUNTY_COVID_S
 with (
@@ -28,12 +28,12 @@ timestamp_format='MM/dd/yyyy'
 );
 ```
 
-Sanity check for COUNTY_COVID_S Stream:
+4. Sanity check for COUNTY_COVID_S Stream:
 ```sql
 SELECT * FROM  COUNTY_COVID_S EMIT CHANGES;
 ```
 
-Run a SELECT query and change data type for some fields:
+5. Run a SELECT query and change data type for some fields:
 ```sql
 SELECT
 PARSE_DATE(TEST_DATE, 'MM/dd/yyyy') AS ISOTESTDATE,
@@ -47,7 +47,7 @@ FROM  COUNTY_COVID_S
 EMIT CHANGES;
 ```
 
-Create derived stream from this stream
+6. Create derived stream from this stream
 ```sql
 CREATE STREAM DERIVED_COVID_S WITH (
   timestamp='TEST_DATE',
@@ -66,12 +66,12 @@ CAST(CUMULATIVE_NUMBER_OF_TESTS_PERFORMED AS DOUBLE) AS CUMULATIVE_NUMBER_OF_TES
 FROM  COUNTY_COVID_S PARTITION BY COUNTY EMIT CHANGES;
 ```
 
-Sanity check on derived Stream:
+7. Sanity check on derived Stream:
 ```sql
 SELECT * FROM DERIVED_COVID_S EMIT CHANGES;
 ```
  
-Run a JOIN query: 
+8. Run a JOIN query: 
  ```sql
 SELECT
 A.GIVENNAME + ' ' + A.MIDDLEINITIAL + ' ' + A.SURNAME AS FULLNAME,
@@ -87,7 +87,7 @@ WHERE NEW_POSITIVES/TOTAL_NUMBER_OF_TESTS_PERFORMED * 100 > 10.0
 EMIT CHANGES;
 ```
 
-If that query works - create a Stream from it!  This will create a new topic.
+9. If that query works - create a Stream from it!  This will create a new topic.
 
 ```sql
 CREATE STREAM PRIORITY_APPLICANTS WITH (KAFKA_TOPIC='priority', VALUE_FORMAT='AVRO') AS
@@ -106,14 +106,14 @@ PARTITION BY S.COUNTY
 EMIT CHANGES;
 ```
 ## Finding fraud in application data
-Use the ```COUNT``` function to count the number of times a Street address appears:
+1. Use the ```COUNT``` function to count the number of times a Street address appears:
 ```sql
 SELECT STREETADDRESS, COUNT(STREETADDRESS) AS N_STREET
 FROM APPLICANTS
 GROUP BY STREETADDRESS
 EMIT CHANGES;
 ```
-Turn that query into a Table:
+2. Turn that query into a Table:
 ```sql
 CREATE TABLE ADDRESS_T WITH (KAFKA_TOPIC='ADDRESS_T', VALUE_FORMAT='AVRO') AS
 SELECT STREETADDRESS, COUNT(STREETADDRESS) AS N_STREET
@@ -121,11 +121,11 @@ FROM APPLICANTS
 GROUP BY STREETADDRESS
 EMIT CHANGES;
 ```
-Query that table to find addresses that occur more than once:
+3. Query that table to find addresses that occur more than once:
 ```sql
 SELECT * FROM ADDRESS_T WHERE N_STREET > 1 EMIT CHANGES;
 ```
-Find fraudsters:
+4. Find fraudsters:
 ```sql
 SELECT ADDRESS_T.STREETADDRESS, ADDRESS_T.N_STREET,
 APPLICANTS.SURNAME
@@ -134,7 +134,7 @@ INNER JOIN ADDRESS_T on APPLICANTS.STREETADDRESS = ADDRESS_T.STREETADDRESS
 WHERE ADDRESS_T.N_STREET > 1
 EMIT CHANGES;
 ```
-Create a new stream/topic from this query:
+5. Create a new stream/topic from this query:
 ```sql
 CREATE STREAM PHONIES WITH (KAFKA_TOPIC='PHONIES', VALUE_FORMAT='AVRO') AS
 SELECT
